@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import './App.css';
 
 function App() {
@@ -9,82 +9,82 @@ function App() {
     STOP: "STOP",
     RESET: "RESET",
   }
+  const COUNTDOWN_STATES = {
+    STARTED: "STARTED",
+    PAUSED: "PAUSED",
+    RESUMED: "RESUMED",
+    STOPPED: "STOPPED",
+    RESET: "RESET",
+    END: "END"
+  }
   const INITIAL_INPUT_VALUE = 0;
 
-  const [timerInput, setTimerInput] = useState(INITIAL_INPUT_VALUE);
-  const [showInput, setShowInput] = useState(true)
-  const [showStart, setShowStart] = useState(true)
-  const [showPause, setShowPause] = useState(false)
-  const [showResume, setShowResume] = useState(false)
-  const [showStop, setShowStop] = useState(false)
-  const [showReset, setShowReset] = useState(false)
-  const intervalID = useRef(null);
+  const [countdown, setCountdown] = useState(INITIAL_INPUT_VALUE);
+  const [countdownState, setCountdownState] = useState(null)
+  const [intervalId, setIntervalId] = useState(null)
 
   useEffect(() => {
-    if(!timerInput && !intervalID) {
-      clearInterval(intervalID.current);
+    if(!countdown && intervalId) {
+      clearInterval(intervalId);
+      setCountdownState(COUNTDOWN_STATES.END)
     }
-  }, [timerInput]);
+  }, [countdown, intervalId]);
 
   const onChangeInputHandler = (e) => {
-    setTimerInput(e.target.value);
+    setCountdown(e.target.value);
   }
 
-  const startTimer = () => {
-    setShowStart((value) => !value);
-    setShowInput(false);
-    setShowPause(true);
-    setShowStop(true);
+  const handleStart = () => {
+    if(!countdown) return;
+    setCountdownState(COUNTDOWN_STATES.STARTED)
     startinterval();
   }
 
-  const startinterval = () => {
-    intervalID.current = setInterval(()=>{
-      setTimerInput((prevTimer) => {
-          if(prevTimer !== 0){
-            return prevTimer - 1;
-          }
-          clearInterval(intervalID.current);
-        })
-    }, 1000)
-  }
-
   const handlePause = () => {
-    setShowPause(false);
-    setShowResume(true);
-    clearInterval(intervalID.current);
+    setCountdownState(COUNTDOWN_STATES.PAUSED)
+    clearInterval(intervalId);
   }
 
   const handleResume = () => {
-    setShowPause(true);
-    setShowResume(false);
+    setCountdownState(COUNTDOWN_STATES.RESUMED)
     startinterval();
   }
 
   const handleStop = () => {
-    setShowStop(false);
-    setShowPause(false);
-    setShowResume(false);
-    setShowReset(true);
-    clearInterval(intervalID.current);
+    setCountdownState(COUNTDOWN_STATES.STOPPED)
+    clearInterval(intervalId);
   }
 
   const handleReset = () => {
-    setShowReset(false);
-    setShowStart(true);
-    setShowInput(true);
-    setTimerInput(INITIAL_INPUT_VALUE);
+    setCountdownState(COUNTDOWN_STATES.RESET)
+    setCountdown(INITIAL_INPUT_VALUE);
+    setIntervalId(null);
   }
 
-  // if intervalId === null, then showInput
-  // if intervalId exists, then showpause/showresume and showStop 
+  const startinterval = () => {
+    if(!countdown) return;
+    const interval = setInterval(() => {
+        setCountdown((prevTimer) => {
+          if(prevTimer !== 0){
+            return prevTimer - 1;
+          }
+        })
+    }, 1000)
+    setIntervalId(interval);
+  }
 
+  const showInput = countdownState === null || countdownState === COUNTDOWN_STATES.RESET;
+  const showCountdownText = !showInput;
+  const showPause = countdownState === COUNTDOWN_STATES.STARTED || countdownState === COUNTDOWN_STATES.RESUMED;
+  const showResume = countdownState === COUNTDOWN_STATES.PAUSED;
+  const showStop = countdownState === COUNTDOWN_STATES.STARTED || countdownState === COUNTDOWN_STATES.PAUSED || countdownState === COUNTDOWN_STATES.RESUMED;
+  const showReset = countdownState === COUNTDOWN_STATES.STOPPED || countdownState === COUNTDOWN_STATES.END;
   return (
     <div className="App">
-      {showInput && <div><input type="text" value={timerInput} onChange={onChangeInputHandler} /></div>}
-      {!showInput && <div className="timerText">Countdown: {timerInput}</div>}
+      {showInput && <div><input type="text" value={countdown} onChange={onChangeInputHandler} /></div>}
+      {showCountdownText && <div className="timerText">Countdown: {countdown}</div>}
       <div>
-        {showStart && <input type="button" value={BUTTONS.START} onClick={startTimer}/>}
+        {showInput && <input type="button" value={BUTTONS.START} onClick={handleStart}/>}
         {showPause && <input type="button" value={BUTTONS.PAUSE} onClick={handlePause}/>}
         {showResume && <input type="button" value={BUTTONS.RESUME} onClick={handleResume}/>}
         {showStop && <input type="button" value={BUTTONS.STOP} onClick={handleStop}/>}
